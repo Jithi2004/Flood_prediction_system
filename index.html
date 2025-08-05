@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flood Risk Prediction</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: url('/static/background.jpg') no-repeat center center fixed;
+            background-size: cover;
+            text-align: center;
+            padding: 20px;
+            color: white;
+        }
+        h1 {
+            margin-top: 20px;
+            text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.7);
+        }
+        .container {
+            width: 50%;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 15px rgba(255, 255, 255, 0.2);
+            margin: auto;
+        }
+        input, button {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            font-size: 16px;
+            border-radius: 5px;
+            border: none;
+        }
+        input {
+            background: rgba(255, 255, 255, 0.8);
+        }
+        button {
+            background-color: #28a745;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        #result {
+            font-size: 18px;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+        .error {
+            color: red;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Flood Risk Prediction</h1>
+    <div class="container">
+        <form id="predictionForm">
+            <label for="city">Enter City Name:</label>
+            <input type="text" id="city" name="city" placeholder="e.g., London" required>
+
+            <label for="static_data">Enter 15 Static Data Values (comma-separated):</label>
+            <input type="text" id="static_data" name="static_data" placeholder="e.g., 3,8,6,6,4,4,6,2,3,2,10,7,4,2,3" required>
+            <span class="error" id="error-message"></span>
+
+            <button type="submit">Predict Flood Risk</button>
+        </form>
+        <div id="result"></div>
+    </div>
+
+    <script>
+        document.getElementById("predictionForm").addEventListener("submit", function(event) {
+            event.preventDefault();
+            const city = document.getElementById("city").value.trim();
+            const staticData = document.getElementById("static_data").value.trim();
+            const errorMessage = document.getElementById("error-message");
+            const resultDiv = document.getElementById("result");
+
+            // Validate static data format
+            const staticValues = staticData.split(",").map(v => v.trim());
+            if (staticValues.length !== 15 || staticValues.some(isNaN)) {
+                errorMessage.textContent = "Error: Please enter exactly 15 numeric values, comma-separated.";
+                resultDiv.innerHTML = "";
+                return;
+            }
+            errorMessage.textContent = "";
+
+            // Send request to the backend
+            fetch("/predict", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                body: `city=${encodeURIComponent(city)}&static_data=${encodeURIComponent(staticData)}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    resultDiv.innerHTML = `<p style="color: red;">${data.error}</p>`;
+                } else {
+                    resultDiv.innerHTML = `<p>Predicted Flood Risk: <strong>${data.flood_risk.toFixed(2)}</strong></p>`;
+                }
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                resultDiv.innerHTML = `<p style="color: red;">Failed to fetch prediction.</p>`;
+            });
+        });
+    </script>
+</body>
+</html>
